@@ -1,0 +1,474 @@
+/* src/index.css - Utilitarian College Admin Theme */
+
+:root {
+  /* Light Theme Tokens */
+  --bg: #f5f6f4;
+  --card: #ffffff;
+  --fg: #1c2421;
+  --mut: #5d6b66;
+  --line: #d9dfdc;
+  --ac: #0f766e;
+  --acfg: #ffffff;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --cl: 88%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Dark Theme Tokens */
+    --bg: #121816;
+    --card: #1b2320;
+    --fg: #e6ece9;
+    --mut: #93a39c;
+    --line: #2e3a36;
+    --ac: #2dd4bf;
+    --acfg: #04211d;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --cl: 26%;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #121816;
+  --card: #1b2320;
+  --fg: #e6ece9;
+  --mut: #93a39c;
+  --line: #2e3a36;
+  --ac: #2dd4bf;
+  --acfg: #04211d;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --cl: 26%;
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f6f4;
+  --card: #ffffff;
+  --fg: #1c2421;
+  --mut: #5d6b66;
+  --line: #d9dfdc;
+  --ac: #0f766e;
+  --acfg: #ffffff;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --cl: 88%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  background-color: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* Container */
+.app-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Page Titles & Headings */
+h1, .page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+h2, h3, .section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 8px;
+}
+
+/* Section Card */
+.section-card {
+  background-color: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Form Layout */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--fg);
+}
+
+.form-group .helper-text {
+  font-size: 12px;
+  color: var(--mut);
+  font-weight: 400;
+}
+
+/* Monospace Inputs, Selects, Textareas */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--fg);
+  outline: none;
+  transition: border-color 0.15s ease, outline 0.15s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--ac);
+  outline-offset: 2px;
+  border-color: var(--ac);
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--ac);
+  color: var(--acfg);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn-secondary {
+  background-color: var(--card);
+  color: var(--fg);
+  border: 1px solid var(--line);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg);
+}
+
+.btn-sm {
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Pill Navigation Buttons */
+.nav-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill-btn {
+  background-color: var(--card);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pill-btn.active {
+  background-color: var(--ac);
+  color: var(--acfg);
+  border-color: var(--ac);
+}
+
+/* Stats Row */
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.stat-value.good {
+  color: var(--ac);
+}
+
+.stat-value.bad {
+  color: var(--bad);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--mut);
+}
+
+/* Timetable Grid */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.timetable-table {
+  width: 100%;
+  min-width: 640px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.timetable-table th,
+.timetable-table td {
+  border: 1px solid var(--line);
+  padding: 8px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.timetable-table th {
+  background-color: var(--bg);
+  color: var(--mut);
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.timetable-table th.period-col,
+.timetable-table td.period-cell {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-weight: 700;
+  width: 50px;
+  text-align: center;
+}
+
+.timetable-table td.filled-cell {
+  background-color: hsl(var(--h, 180), 55%, var(--cl));
+}
+
+.cell-subject {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--fg);
+  margin-bottom: 2px;
+}
+
+.cell-meta {
+  font-size: 11.5px;
+  color: var(--fg);
+  opacity: 0.85;
+}
+
+.cell-sub-note {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--warn);
+  margin-top: 4px;
+}
+
+/* Feedback & Note States */
+.feedback-note {
+  border-left: 3px solid var(--warn);
+  background-color: var(--bg);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  color: var(--fg);
+  font-size: 13.5px;
+}
+
+.empty-state {
+  color: var(--mut);
+  font-size: 13.5px;
+  padding: 16px 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Print CSS */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  .no-print,
+  .nav-pills,
+  .theme-toggle,
+  button {
+    display: none !important;
+  }
+  .section-card {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  .table-container {
+    border: 1px solid #000 !important;
+  }
+  .timetable-table {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .timetable-table th,
+  .timetable-table td {
+    border: 1px solid #666 !important;
+  }
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(10 19 17 / 68%);
+  backdrop-filter: blur(5px);
+}
+
+.auth-modal {
+  width: min(100%, 440px);
+  padding: 24px;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+}
+
+.auth-heading,
+.auth-demo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-eyebrow {
+  margin-bottom: 5px;
+  color: var(--ac);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.auth-heading .section-title {
+  margin: 0;
+}
+
+.auth-roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.auth-roles button {
+  min-height: 36px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.auth-form input,
+.auth-form select {
+  width: 100%;
+}
+
+.auth-student-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-submit {
+  min-height: 42px;
+  margin-top: 2px;
+}
+
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.auth-demo {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--mut);
+  font-size: 12px;
+}
+
+.auth-toggle {
+  width: 100%;
+  padding: 4px;
+  background: transparent;
+  color: var(--ac);
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .auth-modal {
+    padding: 18px;
+  }
+}
