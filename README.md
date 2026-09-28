@@ -1,5 +1,26 @@
 # React + Vite
 
+## Local Setup
+
+Requirements: Node.js and a local MongoDB server listening on `127.0.0.1:27017`.
+
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and set a private `JWT_SECRET`.
+3. Start the API with `npm run server`. It creates the `timetable_scheduler` database and seeds demo users on first startup.
+4. In another terminal, start the UI with `npm run dev`.
+
+All application API endpoints require a valid token except health check, login, and student signup. Student accounts can self-register; creator and faculty accounts are provisioned by an administrator.
+
+## Demo Accounts
+
+| Role | Username | Password |
+| --- | --- | --- |
+| Creator | `creator` | `creator123` |
+| Faculty | `faculty` | `faculty123` |
+| Student | `student` | `student123` |
+
+Passwords are hashed in MongoDB. These credentials are for local testing only.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

@@ -1,160 +1,133 @@
 // src/components/TimetableGrid.jsx
 import React from 'react';
-import { DAYS, TIME_SLOTS } from '../../server/store.js';
-import { Printer, AlertTriangle, CheckCircle, Clock, Info } from 'lucide-react';
 
-export default function TimetableGrid({ timetable, onMarkUnavailable, isFacultyView = false, currentFacultyId = null }) {
+/**
+ * Generates a deterministic hue (0-360) from subject name string
+ * Strips '(Lab)' / '(cont.)' so lab sessions share subject color.
+ */
+function getSubjectHue(subjectName) {
+  if (!subjectName) return 180;
+  const cleanName = subjectName.replace(/\(Lab\)/gi, '').replace(/\(cont\.\)/gi, '').trim();
+  let hash = 0;
+  for (let i = 0; i < cleanName.length; i++) {
+    hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % 360;
+}
+
+const SHORT_DAYS = [
+  { full: 'Monday', short: 'Mon' },
+  { full: 'Tuesday', short: 'Tue' },
+  { full: 'Wednesday', short: 'Wed' },
+  { full: 'Thursday', short: 'Thu' },
+  { full: 'Friday', short: 'Fri' }
+];
+
+const PERIODS = [
+  { id: 1, label: 'P1' },
+  { id: 2, label: 'P2' },
+  { id: 3, label: 'P3' },
+  { id: 4, label: 'P4' },
+  { id: 5, label: 'P5' },
+  { id: 6, label: 'P6' }
+];
+
+export default function TimetableGrid({
+  timetable,
+  onMarkUnavailable,
+  isFacultyView = false,
+  currentFacultyId = null
+}) {
   if (!timetable || !timetable.slots || timetable.slots.length === 0) {
     return (
-      <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-        <Info size={40} color="var(--primary)" style={{ marginBottom: '12px' }} />
-        <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>No Timetable Available</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Please select or generate a timetable to view weekly schedule.</p>
+      <div className="empty-state">
+        No timetable yet. Generate one in the Scheduler dashboard first.
       </div>
     );
   }
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <div className="glass-panel animate-fade-in" style={{ padding: '24px', overflowX: 'auto' }}>
-      
-      {/* Header Info */}
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h2 style={{ fontSize: '1.25rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {timetable.collegeName || 'State Engineering Institute'}
-            <span className="badge badge-morning" style={{ fontSize: '0.75rem' }}>{timetable.batchName || timetable.departmentCode}</span>
-          </h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Semester: {timetable.semester} • {timetable.yearGroup} • Generated: {timetable.createdAt}
-          </p>
-        </div>
-
-        <button className="btn-primary" onClick={handlePrint}>
-          <Printer size={16} /> Print / Export PDF
-        </button>
-      </div>
-
-      {/* Grid Table */}
-      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '6px', fontSize: '0.88rem' }}>
+    <div className="table-container">
+      <table className="timetable-table">
         <thead>
           <tr>
-            <th style={{ background: 'rgba(15, 23, 42, 0.9)', padding: '12px', borderRadius: '8px', color: 'var(--text-secondary)', textAlign: 'center', width: '130px' }}>
-              Day / Time
-            </th>
-            {TIME_SLOTS.map((slot) => (
-              <th key={slot.id} style={{ background: 'rgba(15, 23, 42, 0.9)', padding: '10px', borderRadius: '8px', color: 'var(--text-primary)', textAlign: 'center', minWidth: '130px' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>Slot {slot.id}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{slot.label}</div>
-              </th>
+            <th className="period-col"></th>
+            {SHORT_DAYS.map((d) => (
+              <th key={d.short}>{d.short}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {DAYS.map((day) => (
-            <tr key={day}>
-              {/* Day Header */}
-              <td style={{ background: 'rgba(30, 41, 59, 0.8)', padding: '12px', borderRadius: '8px', fontWeight: 700, color: 'var(--secondary)', textAlign: 'center' }}>
-                {day}
-              </td>
+          {PERIODS.map((period) => (
+            <tr key={period.id}>
+              {/* Period Label Column (P1, P2...) */}
+              <td className="period-cell">{period.label}</td>
 
-              {/* Time Slots */}
-              {TIME_SLOTS.map((slot) => {
-                // Find slot matching day and slotId
-                const slotData = timetable.slots.find((s) => s.day === day && s.slotId === slot.id);
+              {/* Day Columns */}
+              {SHORT_DAYS.map((d) => {
+                const slotData = timetable.slots.find(
+                  (s) => s.day === d.full && s.slotId === period.id
+                );
 
                 if (!slotData) {
-                  return (
-                    <td key={slot.id} style={{ background: 'rgba(15, 23, 42, 0.3)', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.15)' }}>Free</span>
-                    </td>
-                  );
+                  return <td key={d.short} style={{ background: 'transparent' }} />;
                 }
 
+                const hue = getSubjectHue(slotData.subjectName);
                 const isCancelled = slotData.status === 'CANCELLED';
                 const isSubstituted = slotData.isSubstituted;
-                const isLab = slotData.isLab;
-
-                // If faculty view, check if this slot belongs to current faculty
                 const isMyLecture = isFacultyView && slotData.facultyId === currentFacultyId;
 
                 return (
-                  <td key={slot.id} style={{
-                    background: isCancelled
-                      ? 'rgba(244, 63, 94, 0.15)'
-                      : isSubstituted
-                      ? 'rgba(245, 158, 11, 0.15)'
-                      : isLab
-                      ? 'rgba(6, 182, 212, 0.15)'
-                      : 'rgba(99, 102, 241, 0.12)',
-                    border: isCancelled
-                      ? '1px solid rgba(244, 63, 94, 0.4)'
-                      : isSubstituted
-                      ? '1px solid rgba(245, 158, 11, 0.4)'
-                      : isLab
-                      ? '1px solid rgba(6, 182, 212, 0.3)'
-                      : '1px solid var(--border-glass)',
-                    borderRadius: '8px',
-                    padding: '10px',
-                    verticalAlign: 'top',
-                    position: 'relative'
-                  }}>
-                    {/* Subject Title */}
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: isCancelled ? '#fda4af' : '#fff', marginBottom: '4px' }}>
-                      {slotData.subjectName}
+                  <td
+                    key={d.short}
+                    className="filled-cell"
+                    style={{
+                      '--h': hue,
+                      backgroundColor: `hsl(${hue}, 55%, var(--cl))`
+                    }}
+                  >
+                    {/* Subject Name */}
+                    <div className="cell-subject">{slotData.subjectName}</div>
+
+                    {/* Faculty & Room Info */}
+                    <div className="cell-meta">
+                      {slotData.facultyName}
+                    </div>
+                    <div className="cell-meta">
+                      {slotData.roomName}
                     </div>
 
-                    {/* Room Badge */}
-                    <div style={{ fontSize: '0.75rem', color: 'var(--secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span>🏫 {slotData.roomName}</span>
-                      {isLab && <span className="badge badge-lab" style={{ fontSize: '0.65rem', padding: '1px 5px' }}>LAB</span>}
-                    </div>
-
-                    {/* Faculty Name */}
-                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                      👤 {slotData.facultyName}
-                      {slotData.originalFacultyName && (
-                        <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--warning)', fontStyle: 'italic' }}>
-                          (Sub for {slotData.originalFacultyName})
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Time-tracked comment */}
-                    {slotData.comment && (
-                      <div style={{ marginTop: '6px', fontSize: '0.68rem', color: isCancelled ? '#f43f5e' : '#f59e0b', background: 'rgba(0,0,0,0.3)', padding: '4px 6px', borderRadius: '4px' }}>
-                        💬 {slotData.comment}
+                    {/* Substitution Note */}
+                    {isSubstituted && slotData.originalFacultyName && (
+                      <div className="cell-sub-note">
+                        {slotData.facultyName} instead of {slotData.originalFacultyName}
                       </div>
                     )}
 
-                    {/* Cancelled badge */}
+                    {slotData.comment && !isSubstituted && (
+                      <div className="cell-sub-note">
+                        {slotData.comment}
+                      </div>
+                    )}
+
                     {isCancelled && (
-                      <div style={{ marginTop: '4px', fontSize: '0.7rem', color: '#f43f5e', fontWeight: 700 }}>
-                        ❌ CANCELLED
+                      <div className="cell-sub-note" style={{ color: 'var(--bad)' }}>
+                        Cancelled
                       </div>
                     )}
 
-                    {/* Faculty Action: Mark Unavailable (Image 4 requirement) */}
+                    {/* Action Button inside cell ("Can't take" / "Mark Unavailable") */}
                     {isFacultyView && isMyLecture && !isCancelled && (
-                      <button
-                        className="no-print"
-                        onClick={() => onMarkUnavailable(timetable.id, slotData.id, slotData.facultyId)}
-                        style={{
-                          marginTop: '8px',
-                          width: '100%',
-                          fontSize: '0.72rem',
-                          padding: '4px 8px',
-                          background: 'rgba(244, 63, 94, 0.2)',
-                          color: '#fda4af',
-                          border: '1px solid rgba(244, 63, 94, 0.4)',
-                          borderRadius: '4px'
-                        }}
-                      >
-                        🚫 Mark Unavailable
-                      </button>
+                      <div style={{ marginTop: '6px' }}>
+                        <button
+                          type="button"
+                          className="btn-secondary btn-sm"
+                          onClick={() => onMarkUnavailable(timetable.id, slotData.id, slotData.facultyId)}
+                        >
+                          Can't take
+                        </button>
+                      </div>
                     )}
                   </td>
                 );

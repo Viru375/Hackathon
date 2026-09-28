@@ -11,16 +11,27 @@ export const DEPARTMENTS = [
 
 export const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+// Days updated to Monday - Friday (5 working days)
+export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+// Time slots updated to match exact user specifications:
+// Morning: 10:30 - 12:30 (Slots 1 & 2)
+// 45 Min Lunch Break: 12:30 - 1:15
+// Afternoon: 1:15 - 3:15 (Slots 3 & 4)
+// 15 Min Tea Break: 3:15 - 3:30
+// Evening: 3:30 - 5:30 (Slots 5 & 6)
 export const TIME_SLOTS = [
-  { id: 1, label: '08:00 AM - 09:00 AM', period: 'Morning' },
-  { id: 2, label: '09:00 AM - 10:00 AM', period: 'Morning' },
-  { id: 3, label: '10:15 AM - 11:15 AM', period: 'Mid-Morning' },
-  { id: 4, label: '01:00 PM - 02:00 PM', period: 'Afternoon' },
-  { id: 5, label: '02:00 PM - 03:00 PM', period: 'Afternoon' },
-  { id: 6, label: '04:00 PM - 05:00 PM', period: 'Evening' },
-  { id: 7, label: '05:00 PM - 06:00 PM', period: 'Evening' }
+  { id: 1, label: '10:30 AM - 11:30 AM', period: 'Morning Session' },
+  { id: 2, label: '11:30 AM - 12:30 PM', period: 'Morning Session' },
+  { id: 3, label: '01:15 PM - 02:15 PM', period: 'Afternoon Session' },
+  { id: 4, label: '02:15 PM - 03:15 PM', period: 'Afternoon Session' },
+  { id: 5, label: '03:30 PM - 04:30 PM', period: 'Evening Session' },
+  { id: 6, label: '04:30 PM - 05:30 PM', period: 'Evening Session' }
+];
+
+export const BREAK_TIMES = [
+  { id: 'LUNCH', label: 'Lunch Break (45 Mins)', time: '12:30 PM - 01:15 PM', afterSlot: 2 },
+  { id: 'TEA', label: 'Tea Break (15 Mins)', time: '03:15 PM - 03:30 PM', afterSlot: 4 }
 ];
 
 // Generate 50 realistic Faculty Members across 5 branches
@@ -44,10 +55,9 @@ export function generateInitialFaculty() {
         name: fullName,
         email: email,
         username: username,
-        password: 'faculty123',
         department: dept.code,
         maxDailyLectures: 4,
-        unavailability: [] // array of { day, slotId }
+        unavailability: []
       });
       idCounter++;
     }
@@ -78,17 +88,16 @@ export function generateInitialRooms() {
   return rooms;
 }
 
-// In-Memory Database State with Initial Seed Data
 export const db = {
   faculty: generateInitialFaculty(),
   rooms: generateInitialRooms(),
   departments: DEPARTMENTS,
-  timetables: [], // Array of generated schedules
+  timetables: [],
   notifications: [
     {
       id: 'NOTIF_001',
       recipientType: 'ALL',
-      message: 'Welcome to Smart Timetable System! Pre-seeded with 50 Faculty members & 5 Branches.',
+      message: 'Timetable slots updated: Mon-Fri (10:30-12:30, 1:15-3:15, 3:30-5:30) with 45m Lunch & 15m Tea break.',
       timestamp: new Date().toLocaleString(),
       read: false
     }

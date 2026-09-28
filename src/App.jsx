@@ -4,11 +4,18 @@ import Navbar from './components/Navbar.jsx';
 import CreatorDashboard from './components/CreatorDashboard.jsx';
 import FacultyDashboard from './components/FacultyDashboard.jsx';
 import StudentDashboard from './components/StudentDashboard.jsx';
-import { generateInitialFaculty, generateInitialRooms, DEPARTMENTS } from '../server/store.js';
+import LoginModal from './components/LoginModal.jsx';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { generateInitialFaculty, generateInitialRooms } from '../server/store.js';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function App() {
-  const [activeRole, setActiveRole] = useState('CREATOR');
-  const [currentUser, setCurrentUser] = useState({ id: 'CREATOR_01', name: 'Dr. Dean (Creator)', role: 'CREATOR' });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [sessionToken, setSessionToken] = useState('');
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const [facultyList, setFacultyList] = useState(generateInitialFaculty());
   const [roomList, setRoomList] = useState(generateInitialRooms());
@@ -16,9 +23,11 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
 
   // Fetch initial data from Express API
-  const fetchBootstrapData = async () => {
+  const fetchBootstrapData = async (token) => {
     try {
-      const res = await fetch('http://localhost:5000/api/data/bootstrap');
+      const res = await fetch(`${API_BASE_URL}/api/data/bootstrap`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.faculty) setFacultyList(data.faculty);
@@ -32,12 +41,36 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchBootstrapData();
+    const restoreSession = async () => {
+      const savedToken = localStorage.getItem('session_token');
+      if (!savedToken) {
+        setIsCheckingSession(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${savedToken}` }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Your session has expired.');
+        setSessionToken(savedToken);
+        setCurrentUser(data.user);
+        await fetchBootstrapData(savedToken);
+      } catch (error) {
+        localStorage.removeItem('session_token');
+        toast.error(error.message || 'Please sign in again.');
+      } finally {
+        setIsCheckingSession(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   // Pre-generate initial demo timetable for CSE Semester 4 on boot if empty
   useEffect(() => {
-    if (timetables.length === 0 && facultyList.length > 0) {
+    if (currentUser?.role === 'CREATOR' && timetables.length === 0 && facultyList.length > 0) {
       handleGenerateTimetable({
         collegeName: 'Apex Institute of Technology',
         departmentCode: 'CSE',
@@ -51,77 +84,92 @@ export default function App() {
         ]
       });
     }
-  }, [facultyList]);
+  }, [facultyList, currentUser, timetables.length]);
 
   // Handle Timetable Generation
   const handleGenerateTimetable = async (payload) => {
     try {
-      const res = await fetch('http://localhost:5000/api/timetable/generate', {
+      const res = await fetch(`${API_BASE_URL}/api/timetable/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionToken}` },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
-          fetchBootstrapData();
+          fetchBootstrapData(sessionToken);
+        } else {
+          toast.error(data.message || 'Could not generate the timetable.');
         }
+      } else {
+        const data = await res.json();
+        toast.error(data.message || 'Could not generate the timetable.');
       }
-    } catch (err) {
-      console.error('Failed to connect to backend generate endpoint:', err);
+    } catch {
+      toast.error('Could not connect to the timetable server.');
     }
   };
 
   // Handle Faculty Mark Unavailable (triggers 4-point substitute algorithm)
   const handleMarkUnavailable = async (payload) => {
     try {
-      const res = await fetch('http://localhost:5000/api/faculty/mark-unavailable', {
+      const res = await fetch(`${API_BASE_URL}/api/faculty/mark-unavailable`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionToken}` },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
         const data = await res.json();
-        await fetchBootstrapData();
+        await fetchBootstrapData(sessionToken);
         return data;
+      } else {
+        const data = await res.json();
+        toast.error(data.message || 'Could not update availability.');
       }
-    } catch (err) {
-      console.error('Failed to submit faculty unavailability:', err);
+    } catch {
+      toast.error('Could not connect to the timetable server.');
     }
     return { success: false, message: 'Server communication error.' };
   };
 
-  // Handle Demo Reset
-  const handleResetDemo = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/seed/reset', { method: 'POST' });
-      if (res.ok) {
-        await fetchBootstrapData();
-      }
-    } catch (err) {
-      console.error('Failed to reset demo dataset:', err);
-    }
+  // Handle Login Success
+  const handleLoginSuccess = async (userObj, token) => {
+    localStorage.setItem('session_token', token);
+    setSessionToken(token);
+    setCurrentUser(userObj);
+    setIsLoginOpen(false);
+    await fetchBootstrapData(token);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('session_token');
+    setSessionToken('');
+    setCurrentUser(null);
+    setIsLoginOpen(false);
+    setTimetables([]);
+    toast.success('You have signed out.');
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-container">
       
-      {/* Navbar with Role Switching & Notifications */}
+      {/* Navbar with Role Switching & Theme Toggle */}
       <Navbar
-        activeRole={activeRole}
-        setActiveRole={setActiveRole}
-        notifications={notifications}
-        onResetDemo={handleResetDemo}
         currentUser={currentUser}
-        setCurrentUser={setCurrentUser}
-        facultyList={facultyList}
+        onOpenLogin={() => setIsLoginOpen(true)}
+        onLogout={handleLogout}
+      />
+
+      {/* Login & Signup Modal */}
+      <LoginModal
+        isOpen={!isCheckingSession && (!currentUser || isLoginOpen)}
+        onClose={currentUser ? () => setIsLoginOpen(false) : null}
+        onLoginSuccess={handleLoginSuccess}
       />
 
       {/* Main Container */}
-      <main style={{ flex: 1, padding: '0 28px 40px 28px', maxWidth: '1440px', width: '100%', margin: '0 auto' }}>
-        
-        {/* Role 1: Creator Dashboard */}
-        {activeRole === 'CREATOR' && (
+      <main>
+        {!isCheckingSession && currentUser?.role === 'CREATOR' && (
           <CreatorDashboard
             facultyList={facultyList}
             roomList={roomList}
@@ -130,8 +178,7 @@ export default function App() {
           />
         )}
 
-        {/* Role 2: Faculty Dashboard */}
-        {activeRole === 'FACULTY' && (
+        {!isCheckingSession && currentUser?.role === 'FACULTY' && (
           <FacultyDashboard
             currentFaculty={currentUser}
             facultyList={facultyList}
@@ -140,19 +187,15 @@ export default function App() {
           />
         )}
 
-        {/* Role 3: Student Dashboard */}
-        {activeRole === 'STUDENT' && (
+        {!isCheckingSession && currentUser?.role === 'STUDENT' && (
           <StudentDashboard
             timetables={timetables}
             notifications={notifications}
           />
         )}
       </main>
+      <ToastContainer position="top-right" autoClose={3500} theme="colored" />
 
-      {/* Footer */}
-      <footer className="no-print" style={{ padding: '16px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-glass)' }}>
-        Smart Timetable & Classroom Scheduling System • Built with MERN Stack & Vite for Hackathon PS-02
-      </footer>
     </div>
   );
 }

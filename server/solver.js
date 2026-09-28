@@ -4,22 +4,22 @@
 import { DAYS, TIME_SLOTS, db } from './store.js';
 
 /**
- * Returns allowed lab slots based on student's year/semester rule from Handwritten Note 2:
- * 4th Year (Sem 7-8): Early Morning (Slots 1-2)
- * 3rd Year (Sem 5-6): Afternoon (Slots 4-5)
- * 1st/2nd Year (Sem 1-4): Evening (Slots 6-7)
+ * Returns allowed lab slots based on student's year/semester rule with new timing specifications:
+ * 4th Year (Sem 7-8): Morning Session (10:30 AM - 12:30 PM -> Slots 1 & 2)
+ * 3rd Year (Sem 5-6): Afternoon Session (01:15 PM - 03:15 PM -> Slots 3 & 4)
+ * 1st & 2nd Year (Sem 1-4): Evening Session (03:30 PM - 05:30 PM -> Slots 5 & 6)
  */
 export function getAllowedLabSlotsForSemester(semesterNumber) {
   const sem = parseInt(semesterNumber, 10);
   if (sem === 7 || sem === 8) {
-    // 4th Year -> Early morning (Slots 1 and 2)
+    // 4th Year -> Morning Session (10:30 AM - 12:30 PM)
     return [1, 2];
   } else if (sem === 5 || sem === 6) {
-    // 3rd Year -> Afternoon session (Slots 4 and 5)
-    return [4, 5];
+    // 3rd Year -> Afternoon Session (01:15 PM - 03:15 PM)
+    return [3, 4];
   } else {
-    // 1st & 2nd Year (Sem 1, 2, 3, 4) -> Evening section (Slots 6 and 7)
-    return [6, 7];
+    // 1st & 2nd Year (Sem 1, 2, 3, 4) -> Evening Session (03:30 PM - 05:30 PM)
+    return [5, 6];
   }
 }
 
@@ -52,7 +52,6 @@ export function generateConflictFreeTimetable({ collegeName, departmentCode, sem
   subjects.forEach((subject) => {
     const isLab = subject.isLab === true || subject.isLab === 'true' || subject.isLab === 'Yes';
     const totalWeeklyLectures = parseInt(subject.lectureHours || 3, 10);
-    const labHoursNeeded = isLab ? parseInt(subject.labHours || 2, 10) : 0;
     const primaryFacultyId = Array.isArray(subject.facultyIds) ? subject.facultyIds[0] : subject.facultyId;
     const lectureRoomId = subject.lectureRoomId;
     const labRoomId = subject.labRoomId || lectureRoomId;
@@ -66,7 +65,7 @@ export function generateConflictFreeTimetable({ collegeName, departmentCode, sem
       const startSlotId = allowedLabSlotPair[0];
       const endSlotId = allowedLabSlotPair[1];
 
-      // Find a day where both lab slots, lab room, and faculty are free
+      // Find a day (Monday-Friday) where both lab slots, lab room, and faculty are free
       for (const day of DAYS) {
         const keyFac1 = `${primaryFacultyId}_${day}_${startSlotId}`;
         const keyFac2 = `${primaryFacultyId}_${day}_${endSlotId}`;
@@ -125,12 +124,12 @@ export function generateConflictFreeTimetable({ collegeName, departmentCode, sem
       if (!labScheduled) {
         conflictReport.push({
           subjectName: subject.name,
-          issue: `Could not fit 2-hour Lab block for ${yearGroup} in designated time window (${startSlotId === 1 ? 'Early Morning' : startSlotId === 4 ? 'Afternoon' : 'Evening'}). All slots occupied.`
+          issue: `Could not fit 2-hour Lab block for ${yearGroup} in designated time window (${startSlotId === 1 ? '10:30-12:30' : startSlotId === 3 ? '01:15-03:15' : '03:30-05:30'}). All slots occupied.`
         });
       }
     }
 
-    // Second: Schedule Theory Lectures (1 hour slots across different days)
+    // Second: Schedule Theory Lectures (1 hour slots across Mon-Fri)
     for (const day of DAYS) {
       if (scheduledLecturesCount >= totalWeeklyLectures) break;
 
@@ -197,7 +196,7 @@ export function generateConflictFreeTimetable({ collegeName, departmentCode, sem
   db.auditLogs.push({
     id: `LOG_${Date.now()}`,
     type: 'TIMETABLE_CREATED',
-    message: `Timetable created for ${batchName} with ${generatedSlots.length} slots.`,
+    message: `Timetable created for ${batchName} (Mon-Fri 10:30-05:30) with ${generatedSlots.length} slots.`,
     timestamp: new Date().toLocaleString()
   });
 

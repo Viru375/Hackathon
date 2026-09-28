@@ -1,141 +1,91 @@
 // src/components/Navbar.jsx
-import React, { useState } from 'react';
-import { Calendar, UserCheck, GraduationCap, ShieldAlert, Bell, RefreshCw, Layers } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon, Monitor, LogIn, LogOut, User } from 'lucide-react';
 
-export default function Navbar({ activeRole, setActiveRole, notifications, onResetDemo, currentUser, setCurrentUser, facultyList }) {
-  const [showNotifications, setShowNotifications] = useState(false);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+export default function Navbar({ currentUser, onOpenLogin, onLogout }) {
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('theme_preference') || 'system';
+    } catch (e) {
+      return 'system';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('theme_preference', theme);
+    } catch (e) {}
+
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.setAttribute('data-theme', 'light');
+    } else if (theme === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.removeAttribute('data-theme');
+    }
+  }, [theme]);
+
+  const cycleTheme = () => {
+    if (theme === 'system') setTheme('light');
+    else if (theme === 'light') setTheme('dark');
+    else setTheme('system');
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'light') return <Sun size={14} />;
+    if (theme === 'dark') return <Moon size={14} />;
+    return <Monitor size={14} />;
+  };
 
   return (
-    <header className="glass-panel no-print" style={{ borderRadius: 0, borderBottom: '1px solid var(--border-glass)', padding: '14px 28px', marginBottom: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', padding: '10px', borderRadius: '12px', display: 'flex', color: '#fff' }}>
-            <Calendar size={26} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#fff', margin: 0 }}>Smart Timetable Scheduler</h1>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>MERN Stack • Automated CSP Engine • Live Substitution</p>
-          </div>
-        </div>
+    <header className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
+      
+      {/* Header Top Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 className="page-title" style={{ margin: 0 }}>Timetable Scheduler</h1>
 
-        {/* Role Selector Tabs (Creator, Faculty, Student) */}
-        <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.8)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Active User Badge */}
+          {currentUser && (
+            <div style={{ fontSize: '13px', color: 'var(--mut)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <User size={14} />
+              <span>{currentUser.name}</span>
+            </div>
+          )}
+
+          {/* Theme Toggle Button */}
           <button
-            className={`role-btn ${activeRole === 'CREATOR' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => {
-              setActiveRole('CREATOR');
-              setCurrentUser({ id: 'CREATOR_01', name: 'Dr. Dean (Creator)', role: 'CREATOR' });
-            }}
-            style={{ padding: '8px 16px', fontSize: '0.88rem' }}
+            type="button"
+            className="btn-secondary theme-toggle"
+            onClick={cycleTheme}
+            title={`Theme: ${theme.toUpperCase()}`}
+            style={{ fontSize: '12px', padding: '6px 10px' }}
           >
-            <ShieldAlert size={16} /> Creator Dashboard
+            {getThemeIcon()}
+            <span style={{ textTransform: 'capitalize' }}>{theme}</span>
           </button>
 
           <button
-            className={`role-btn ${activeRole === 'FACULTY' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => {
-              setActiveRole('FACULTY');
-              if (facultyList && facultyList.length > 0) {
-                setCurrentUser({ id: facultyList[0].id, name: facultyList[0].name, role: 'FACULTY', department: facultyList[0].department });
-              }
-            }}
-            style={{ padding: '8px 16px', fontSize: '0.88rem' }}
+            type="button"
+            className="btn-secondary"
+            onClick={currentUser ? onLogout : onOpenLogin}
+            style={{ fontSize: '12px', padding: '6px 10px' }}
           >
-            <UserCheck size={16} /> Faculty Dashboard
-          </button>
-
-          <button
-            className={`role-btn ${activeRole === 'STUDENT' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => {
-              setActiveRole('STUDENT');
-              setCurrentUser({ id: 'STUDENT_01', name: 'Rahul Kumar', role: 'STUDENT', department: 'CSE', semester: 4 });
-            }}
-            style={{ padding: '8px 16px', fontSize: '0.88rem' }}
-          >
-            <GraduationCap size={16} /> Student Dashboard
-          </button>
-        </div>
-
-        {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          
-          {/* Notification Bell */}
-          <div style={{ position: 'relative' }}>
-            <button
-              className="btn-secondary"
-              onClick={() => setShowNotifications(!showNotifications)}
-              style={{ padding: '10px', borderRadius: '50%', position: 'relative' }}
-              title="Notifications"
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* Notifications Dropdown */}
-            {showNotifications && (
-              <div className="glass-panel animate-fade-in" style={{
-                position: 'absolute',
-                right: 0,
-                top: '50px',
-                width: '360px',
-                maxHeight: '400px',
-                overflowY: 'auto',
-                zIndex: 100,
-                padding: '16px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
-                  <h4 style={{ fontSize: '0.95rem', margin: 0 }}>Notifications Feed</h4>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{notifications.length} updates</span>
-                </div>
-                {notifications.length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '12px' }}>No notifications yet.</p>
-                ) : (
-                  notifications.map((notif) => (
-                    <div key={notif.id} style={{
-                      padding: '10px',
-                      borderRadius: '8px',
-                      background: 'rgba(255,255,255,0.03)',
-                      borderLeft: notif.type === 'LECTURE_CANCELLED' ? '3px solid var(--accent)' : '3px solid var(--secondary)',
-                      marginBottom: '8px',
-                      fontSize: '0.82rem'
-                    }}>
-                      <p style={{ margin: 0, color: 'var(--text-primary)' }}>{notif.message}</p>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>{notif.timestamp}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Reset Demo Button */}
-          <button className="btn-secondary" onClick={onResetDemo} title="Reset Data to Default Demo State">
-            <RefreshCw size={16} /> Reset Demo Data
+            {currentUser ? <LogOut size={14} /> : <LogIn size={14} />}
+            {currentUser ? 'Sign out' : 'Sign in'}
           </button>
         </div>
       </div>
+
+      {currentUser && (
+        <div className="nav-pills" aria-label={`${currentUser.role.toLowerCase()} dashboard`}>
+          <span className="pill-btn active">
+            {currentUser.role === 'CREATOR' ? 'Scheduler dashboard' : `${currentUser.role.toLowerCase()} dashboard`}
+          </span>
+        </div>
+      )}
+
     </header>
   );
 }
